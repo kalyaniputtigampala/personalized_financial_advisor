@@ -7,6 +7,9 @@ import 'home_page.dart';
 import 'logs_page.dart';
 import 'target_page.dart';
 import 'profile_page.dart';
+import 'tax_page.dart';
+import 'About.dart';
+import 'help_support.dart';
 // Import the AuthService
 
 class MainPage extends StatefulWidget {
@@ -18,7 +21,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  int _selectedIndex = 1; // Default to Home
+  int _selectedIndex = 0; // Default to Home
   bool _hasShownProfileDialog = false;
   final AuthService _authService = AuthService(); // Add AuthService instance
 
@@ -262,16 +265,20 @@ class _MainPageState extends State<MainPage> {
         unselectedItemColor: Colors.white,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: 'Logs',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.article),
+            label: 'Logs',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.track_changes),
             label: 'Target',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance),
+            label: 'Tax',
           ),
         ],
       ),
@@ -331,7 +338,6 @@ class _MainPageState extends State<MainPage> {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem('About'),
-                _buildDrawerItem('Policies'),
                 _buildDrawerItem('Help & Support'),
                 _buildDrawerItem('Logout'),
               ],
@@ -365,12 +371,17 @@ class _MainPageState extends State<MainPage> {
     switch (title) {
       case 'About':
       // Navigate to about page
-        break;
-      case 'Policies':
-      // Navigate to policies page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AboutPage()),
+        );
         break;
       case 'Help & Support':
       // Navigate to help page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HelpSupportPage()),
+        );
         break;
       case 'Logout':
       // Handle logout
@@ -378,6 +389,7 @@ class _MainPageState extends State<MainPage> {
         break;
     }
   }
+
 
   void _showLogoutDialog() {
     showDialog(
@@ -448,11 +460,13 @@ class _MainPageState extends State<MainPage> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        return LogsPage();
-      case 1:
         return HomePage();
+      case 1:
+        return LogsPage();
       case 2:
         return TargetPage();
+      case 3:
+        return TaxPage();
       default:
         return HomePage();
     }

@@ -21,6 +21,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _deleteExpiredReminders();
     _checkTodaysReminders();
   }
 
@@ -40,7 +41,10 @@ class _HomePageState extends State<HomePage> {
       if (querySnapshot.docs.isNotEmpty) {
         final reminders = querySnapshot.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['name'] as String;
+          return {
+            'id': doc.id,
+            'name': data['name'] as String,
+          };
         }).toList();
 
         // Show alert dialog with today's reminders
@@ -51,8 +55,57 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _deleteExpiredReminders() async {
+    if (_currentUserId == null) return;
 
-  void _showTodaysRemindersAlert(List<String> reminders) {
+    try {
+      final today = DateTime.now();
+
+      // Get all reminders for current user
+      final querySnapshot = await _firestore
+          .collection(_remindersCollection)
+          .where('userId', isEqualTo: _currentUserId)
+          .get();
+
+      final batch = _firestore.batch();
+      int deletedCount = 0;
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final reminderDate = data['date'] as String;
+
+        // Parse reminder date (DD-MM-YYYY format)
+        final dateParts = reminderDate.split('-');
+        if (dateParts.length == 3) {
+          try {
+            final reminderDateTime = DateTime(
+              int.parse(dateParts[2]), // year
+              int.parse(dateParts[1]), // month
+              int.parse(dateParts[0]), // day
+            );
+
+            // If reminder date is before today, mark for deletion
+            if (reminderDateTime.isBefore(today)) {
+              batch.delete(doc.reference);
+              deletedCount++;
+            }
+          } catch (e) {
+            // Skip invalid date formats
+            print('Invalid date format in reminder: $reminderDate');
+          }
+        }
+      }
+
+      // Execute batch delete
+      if (deletedCount > 0) {
+        await batch.commit();
+        print('Auto-deleted $deletedCount expired reminders');
+      }
+    } catch (e) {
+      print('Error deleting expired reminders: $e');
+    }
+  }
+  void _showTodaysRemindersAlert(List<Map<String, String>> reminders) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -60,7 +113,6 @@ class _HomePageState extends State<HomePage> {
           children: [
             Icon(Icons.notification_important, color: Colors.orange, size: 20),
             const SizedBox(width: 8),
-            // Fixed: Added Expanded to prevent title overflow
             const Expanded(
               child: Text(
                 'Today\'s Reminders',
@@ -86,20 +138,101 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Icon(Icons.circle, size: 6, color: Colors.grey[600]),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(reminder)),
+                  Expanded(child: Text(reminder['name']!)),
                 ],
               ),
             )),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade600),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'These reminders will be automatically removed tomorrow',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it!'),
+            onPressed: () async {
+              // Optional: Delete today's reminders immediately
+              await _deleteTodaysReminders(reminders);
+              Navigator.pop(context);
+            },
+            child: const Text('Got it & Remove Now'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteTodaysReminders(List<Map<String, String>> reminders) async {
+    if (_currentUserId == null) return;
+
+    try {
+      final batch = _firestore.batch();
+
+      for (var reminder in reminders) {
+        final docRef = _firestore.collection(_remindersCollection).doc(reminder['id']);
+        batch.delete(docRef);
+      }
+
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${reminders.length} reminder(s) removed'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error removing reminders: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  // Calculate monthly expenses for current year
+  Map<int, double> _calculateMonthlyExpenses(List<QueryDocumentSnapshot> expenseDocs) {
+    final Map<int, double> monthlyExpenses = {};
+    final currentYear = DateTime.now().year;
+
+    // Initialize all months with 0
+    for (int i = 1; i <= 12; i++) {
+      monthlyExpenses[i] = 0.0;
+    }
+
+    // Calculate expenses for each month
+    for (var doc in expenseDocs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final amount = (data['amount'] as num).toDouble();
+      final date = (data['date'] as Timestamp).toDate();
+
+      // Only include current year expenses
+      if (date.year == currentYear) {
+        monthlyExpenses[date.month] = (monthlyExpenses[date.month] ?? 0.0) + amount;
+      }
+    }
+
+    return monthlyExpenses;
   }
 
   @override
@@ -116,8 +249,8 @@ class _HomePageState extends State<HomePage> {
               _buildDashboardCards(),
               const SizedBox(height: 24),
 
-              // Expenses Scatter Plot
-              _buildExpensesScatterPlot(),
+              // Monthly Expenses Scatter Plot
+              _buildMonthlyExpensesChart(),
               const SizedBox(height: 24),
 
               // Reminders Section
@@ -125,6 +258,267 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMonthlyExpensesChart() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.analytics, color: Colors.blue, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Monthly Expenses ${DateTime.now().year}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Chart
+          Container(
+            height: 300,
+            padding: const EdgeInsets.all(16),
+            child: _currentUserId == null
+                ? const Center(
+              child: Text(
+                'Please log in to view expenses chart',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+              ),
+            )
+                : StreamBuilder<QuerySnapshot>(
+              stream: _firestore
+                  .collection('expenses')
+                  .where('userId', isEqualTo: _currentUserId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                final expenseDocs = snapshot.data!.docs;
+
+                if (expenseDocs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No expenses data available',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                    ),
+                  );
+                }
+
+                final monthlyExpenses = _calculateMonthlyExpenses(expenseDocs);
+                final currentMonth = DateTime.now().month;
+
+                // Filter expenses up to current month only
+                final filteredExpenses = <int, double>{};
+                for (int i = 1; i <= currentMonth; i++) {
+                  filteredExpenses[i] = monthlyExpenses[i] ?? 0.0;
+                }
+
+                final maxAmount = filteredExpenses.values.isNotEmpty
+                    ? filteredExpenses.values.reduce((a, b) => a > b ? a : b)
+                    : 0.0;
+
+                // Create line chart spots for connecting the dots
+                final lineSpots = filteredExpenses.entries.map((entry) {
+                  return FlSpot(entry.key.toDouble(), entry.value);
+                }).toList();
+
+                return LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      drawHorizontalLine: false, // Remove horizontal grid lines
+                      verticalInterval: 1,
+                      getDrawingVerticalLine: (value) {
+                        return FlLine(
+                          color: Colors.grey.shade300,
+                          strokeWidth: 0.5,
+                        );
+                      },
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        axisNameWidget: const Text(
+                          'Months',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            const months = [
+                              '',
+                              'Jan',
+                              'Feb',
+                              'Mar',
+                              'Apr',
+                              'May',
+                              'Jun',
+                              'Jul',
+                              'Aug',
+                              'Sep',
+                              'Oct',
+                              'Nov',
+                              'Dec'
+                            ];
+                            if (value.toInt() >= 1 && value.toInt() <= currentMonth) {
+                              return Text(
+                                months[value.toInt()],
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
+                      leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false), // Hide Y-axis
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                    ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade400, width: 1),
+                        left: BorderSide(color: Colors.grey.shade400, width: 1),
+                        right: BorderSide.none,
+                        top: BorderSide.none,
+                      ),
+                    ),
+                     // Clip the chart to prevent going outside bounds
+                    minX: 1,
+                    maxX: currentMonth.toDouble(),
+                    minY: 0,
+                    maxY: maxAmount > 0 ? maxAmount * 1.2 : 1000,
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: lineSpots,
+                        isCurved: true,
+                        curveSmoothness: 0.2, // Reduced smoothness to prevent excessive curves
+                        color: Colors.blue,
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        preventCurveOverShooting: true, // Prevent curve from going below minY
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                            radius: 6,
+                            color: Colors.blue,
+                            strokeWidth: 2,
+                            strokeColor: Colors.white,
+                          ),
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: Colors.blue.withOpacity(0.1),
+                          applyCutOffY: true, // Apply cutoff to prevent area from going below minY
+                          cutOffY: 0, // Set cutoff at Y = 0
+                        ),
+                      ),
+                    ],
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (touchedSpot) => Colors.blue.shade800,
+
+                        tooltipPadding: const EdgeInsets.all(8),
+                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                          return touchedSpots.map((LineBarSpot touchedSpot) {
+                            const months = [
+                              '',
+                              'January',
+                              'February',
+                              'March',
+                              'April',
+                              'May',
+                              'June',
+                              'July',
+                              'August',
+                              'September',
+                              'October',
+                              'November',
+                              'December'
+                            ];
+                            return LineTooltipItem(
+                              '${months[touchedSpot.x.toInt()]}\n₹${touchedSpot.y.toStringAsFixed(0)}',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                      touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+                        // Handle touch events if needed
+                      },
+                      handleBuiltInTouches: true,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -257,229 +651,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildExpensesScatterPlot() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Monthly Expenses Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 250,
-            child: _currentUserId != null
-                ? StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('expenses')
-                  .where('userId', isEqualTo: _currentUserId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error: ${snapshot.error}'),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No expense data available\nAdd some expenses to see the chart',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  );
-                }
-
-                // Process data to get monthly totals
-                final monthlyTotals = _calculateMonthlyTotals(snapshot.data!.docs);
-
-                if (monthlyTotals.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No expense data available',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  );
-                }
-
-                return _buildScatterChart(monthlyTotals);
-              },
-            )
-                : const Center(
-              child: Text(
-                'Please log in to view your expenses',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Map<int, double> _calculateMonthlyTotals(List<QueryDocumentSnapshot> docs) {
-    Map<int, double> monthlyTotals = {};
-
-    for (var doc in docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final amount = (data['amount'] as num).toDouble();
-      final date = (data['date'] as Timestamp).toDate();
-
-      // Create a unique key for each month (YYYYMM format)
-      final monthKey = date.year * 100 + date.month;
-
-      monthlyTotals[monthKey] = (monthlyTotals[monthKey] ?? 0) + amount;
-    }
-
-    return monthlyTotals;
-  }
-
-  Widget _buildScatterChart(Map<int, double> monthlyTotals) {
-    if (monthlyTotals.isEmpty) {
-      return const Center(
-        child: Text(
-          'No data available',
-          style: TextStyle(color: Colors.grey),
-        ),
-      );
-    }
-
-    // Convert monthly totals to scatter plot spots
-    final spots = <ScatterSpot>[];
-    final sortedKeys = monthlyTotals.keys.toList()..sort();
-
-    for (int i = 0; i < sortedKeys.length; i++) {
-      final monthKey = sortedKeys[i];
-      final amount = monthlyTotals[monthKey]!;
-      spots.add(ScatterSpot(i.toDouble(), amount));
-    }
-
-    final maxAmount = monthlyTotals.values.reduce((a, b) => a > b ? a : b);
-    final minAmount = monthlyTotals.values.reduce((a, b) => a < b ? a : b);
-
-    return ScatterChart(
-      ScatterChartData(
-        minX: 0,
-        maxX: (spots.length - 1).toDouble(),
-        minY: minAmount * 0.8, // Add some padding
-        maxY: maxAmount * 1.2, // Add some padding
-        scatterSpots: spots,
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 50,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  '₹${(value / 1000).toStringAsFixed(0)}K',
-                  style: const TextStyle(fontSize: 10),
-                );
-              },
-            ),
-          ),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < sortedKeys.length) {
-                  final monthKey = sortedKeys[index];
-                  final year = monthKey ~/ 100;
-                  final month = monthKey % 100;
-
-                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-                  return Text(
-                    '${months[month - 1]}\n${year.toString().substring(2)}',
-                    style: const TextStyle(fontSize: 9),
-                    textAlign: TextAlign.center,
-                  );
-                }
-                return const Text('');
-              },
-            ),
-          ),
-        ),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: maxAmount / 5,
-          getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: Colors.grey.withOpacity(0.2),
-              strokeWidth: 1,
-            );
-          },
-        ),
-        borderData: FlBorderData(
-          show: true,
-          border: Border(
-            left: BorderSide(color: Colors.grey.withOpacity(0.3)),
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.3)),
-          ),
-        ),
-        scatterTouchData: ScatterTouchData(
-          touchTooltipData: ScatterTouchTooltipData(
-            getTooltipItems: (ScatterSpot touchedSpot) {
-              final index = touchedSpot.x.toInt();
-              if (index >= 0 && index < sortedKeys.length) {
-                final monthKey = sortedKeys[index];
-                final year = monthKey ~/ 100;
-                final month = monthKey % 100;
-
-                const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'];
-
-                return ScatterTooltipItem(
-                  '${months[month - 1]} $year\n₹${touchedSpot.y.toStringAsFixed(0)}',
-                );
-              }
-              return ScatterTooltipItem('');
-            },
-          ),
-        ),
       ),
     );
   }
@@ -903,6 +1074,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 }
+
+
 
 class ReminderItem {
   final String id;
