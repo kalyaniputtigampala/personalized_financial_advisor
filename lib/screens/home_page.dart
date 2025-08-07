@@ -15,6 +15,9 @@ class _HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final String _remindersCollection = 'reminders';
 
+  // Primary design color - consistent with your design system
+  static const Color primaryColor = Color(0xFF1993C4);
+
   // Get current user ID
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -91,7 +94,7 @@ class _HomePageState extends State<HomePage> {
             }
           } catch (e) {
             // Skip invalid date formats
-            print('Invalid date format in reminder: $reminderDate');
+            debugPrint('Invalid date format in reminder: $reminderDate');
           }
         }
       }
@@ -99,24 +102,39 @@ class _HomePageState extends State<HomePage> {
       // Execute batch delete
       if (deletedCount > 0) {
         await batch.commit();
-        print('Auto-deleted $deletedCount expired reminders');
+        debugPrint('Auto-deleted $deletedCount expired reminders');
       }
     } catch (e) {
-      print('Error deleting expired reminders: $e');
+      debugPrint('Error deleting expired reminders: $e');
     }
   }
+
   void _showTodaysRemindersAlert(List<Map<String, String>> reminders) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: Row(
           children: [
-            Icon(Icons.notification_important, color: Colors.orange, size: 20),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.notification_important, color: Colors.orange, size: 20),
+            ),
+            const SizedBox(width: 12),
             const Expanded(
               child: Text(
                 'Today\'s Reminders',
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -129,37 +147,256 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Text(
               'You have reminders for today:',
-              style: TextStyle(fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
             ),
-            const SizedBox(height: 12),
-            ...reminders.map((reminder) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+            const SizedBox(height: 16),
+            ...reminders.map((reminder) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.circle, size: 6, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(reminder['name']!)),
+                  Icon(Icons.circle, size: 6, color: primaryColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      reminder['name']!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             )),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(6),
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade600),
-                  const SizedBox(width: 6),
+                  Icon(Icons.info_outline, size: 16, color: primaryColor),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'These reminders will be automatically removed tomorrow',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.blue.shade600,
-                        fontStyle: FontStyle.italic,
+                        color: primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Got it',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  void _showDeleteConfirmation(String reminderId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Delete Reminder',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this reminder?',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black87,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteReminder(reminderId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Delete',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Updated dialog with consistent styling
+  void _showAddReminderDialog() {
+    final nameController = TextEditingController();
+    final dateController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Add Reminder',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Name field with consistent styling
+            TextFormField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'Reminder Name',
+                hintText: 'Enter reminder name',
+                prefixIcon: Icon(Icons.event_note, color: primaryColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Date field with consistent styling
+            TextFormField(
+              controller: dateController,
+              decoration: InputDecoration(
+                labelText: 'Date',
+                hintText: 'Select date',
+                prefixIcon: Icon(Icons.calendar_today, color: primaryColor),
+                suffixIcon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(primary: primaryColor),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (date != null) {
+                  dateController.text = '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+                }
+              },
+              readOnly: true,
+            ),
+            const SizedBox(height: 16),
+            // Info box with consistent styling
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You\'ll get an alert when you open the app on the selected date',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: primaryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -170,46 +407,359 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
             onPressed: () async {
-              // Optional: Delete today's reminders immediately
-              await _deleteTodaysReminders(reminders);
-              Navigator.pop(context);
+              if (nameController.text.isNotEmpty && dateController.text.isNotEmpty) {
+                if (_currentUserId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Please log in to add reminders'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+                  return;
+                }
+                await _addReminder(nameController.text, dateController.text);
+                Navigator.pop(context);
+              }
             },
-            child: const Text('Got it & Remove Now'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Add Reminder',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _deleteTodaysReminders(List<Map<String, String>> reminders) async {
-    if (_currentUserId == null) return;
+  void _showEditReminderDialog(ReminderItem reminder) {
+    final nameController = TextEditingController(text: reminder.name);
+    final dateController = TextEditingController(text: reminder.date);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Edit Reminder',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Name field
+            TextFormField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'Reminder Name',
+                prefixIcon: Icon(Icons.event_note, color: primaryColor),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Date field
+            TextFormField(
+              controller: dateController,
+              decoration: InputDecoration(
+                labelText: 'Date',
+                prefixIcon: Icon(Icons.calendar_today, color: primaryColor),
+                suffixIcon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: primaryColor, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(primary: primaryColor),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (date != null) {
+                  dateController.text = '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+                }
+              },
+              readOnly: true,
+            ),
+            const SizedBox(height: 16),
+            // Info box
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Alert will be shown on the updated date',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty && dateController.text.isNotEmpty) {
+                await _updateReminder(reminder.id, nameController.text, dateController.text, reminder.type);
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Update',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Firebase CRUD operations with enhanced feedback
+  Future<void> _addReminder(String name, String date) async {
+    if (_currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please log in to add reminders'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
 
     try {
-      final batch = _firestore.batch();
-
-      for (var reminder in reminders) {
-        final docRef = _firestore.collection(_remindersCollection).doc(reminder['id']);
-        batch.delete(docRef);
-      }
-
-      await batch.commit();
+      // Add reminder to Firestore
+      await _firestore.collection(_remindersCollection).add({
+        'userId': _currentUserId,
+        'name': name,
+        'date': date,
+        'type': 'reminder',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${reminders.length} reminder(s) removed'),
+          content: const Text('Reminder added successfully'),
           backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error removing reminders: $e'),
+          content: Text('Error adding reminder: $e'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
   }
+
+  Future<void> _updateReminder(String id, String name, String date, String type) async {
+    if (_currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please log in to update reminders'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+
+    try {
+      // First check if the reminder belongs to the current user
+      final doc = await _firestore.collection(_remindersCollection).doc(id).get();
+      if (!doc.exists || doc.data()?['userId'] != _currentUserId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Unauthorized: Cannot update this reminder'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
+
+      // Update reminder in Firestore
+      await _firestore.collection(_remindersCollection).doc(id).update({
+        'name': name,
+        'date': date,
+        'type': type,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Reminder updated successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating reminder: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteReminder(String id) async {
+    if (_currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please log in to delete reminders'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+
+    try {
+      // First check if the reminder belongs to the current user
+      final doc = await _firestore.collection(_remindersCollection).doc(id).get();
+      if (!doc.exists || doc.data()?['userId'] != _currentUserId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Unauthorized: Cannot delete this reminder'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
+
+      // Delete reminder from Firestore
+      await _firestore.collection(_remindersCollection).doc(id).delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Reminder deleted successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting reminder: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
   // Calculate monthly expenses for current year
   Map<int, double> _calculateMonthlyExpenses(List<QueryDocumentSnapshot> expenseDocs) {
     final Map<int, double> monthlyExpenses = {};
@@ -239,19 +789,22 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      //backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Welcome Header
+
               // Dashboard Cards
               _buildDashboardCards(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
-              // Monthly Expenses Scatter Plot
+              // Monthly Expenses Chart
               _buildMonthlyExpensesChart(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
 
               // Reminders Section
               _buildRemindersSection(),
@@ -262,17 +815,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
   Widget _buildMonthlyExpensesChart() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.05),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -280,16 +834,23 @@ class _HomePageState extends State<HomePage> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
+                bottom: BorderSide(color: Colors.grey.shade100),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.analytics, color: Colors.blue, size: 20),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.analytics, color: primaryColor, size: 20),
+                ),
+                const SizedBox(width: 12),
                 Text(
                   'Monthly Expenses ${DateTime.now().year}',
                   style: const TextStyle(
@@ -305,16 +866,12 @@ class _HomePageState extends State<HomePage> {
           // Chart
           Container(
             height: 300,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: _currentUserId == null
-                ? const Center(
-              child: Text(
-                'Please log in to view expenses chart',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
-              ),
+                ? _buildEmptyState(
+              icon: Icons.bar_chart,
+              title: 'No Data Available',
+              subtitle: 'Please log in to view expenses chart',
             )
                 : StreamBuilder<QuerySnapshot>(
               stream: _firestore
@@ -323,31 +880,22 @@ class _HomePageState extends State<HomePage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  );
+                  return _buildErrorState('Error loading chart data');
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(color: primaryColor),
                   );
                 }
 
                 final expenseDocs = snapshot.data!.docs;
 
                 if (expenseDocs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No expenses data available',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 16,
-                      ),
-                    ),
+                  return _buildEmptyState(
+                    icon: Icons.show_chart,
+                    title: 'No Expenses Yet',
+                    subtitle: 'Start adding expenses to see your chart',
                   );
                 }
 
@@ -374,12 +922,12 @@ class _HomePageState extends State<HomePage> {
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
-                      drawHorizontalLine: false, // Remove horizontal grid lines
+                      drawHorizontalLine: false,
                       verticalInterval: 1,
                       getDrawingVerticalLine: (value) {
                         return FlLine(
-                          color: Colors.grey.shade300,
-                          strokeWidth: 0.5,
+                          color: Colors.grey.shade200,
+                          strokeWidth: 1,
                         );
                       },
                     ),
@@ -390,7 +938,8 @@ class _HomePageState extends State<HomePage> {
                           'Months',
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
                         ),
                         sideTitles: SideTitles(
@@ -415,9 +964,10 @@ class _HomePageState extends State<HomePage> {
                             if (value.toInt() >= 1 && value.toInt() <= currentMonth) {
                               return Text(
                                 months[value.toInt()],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
                                 ),
                               );
                             }
@@ -425,8 +975,8 @@ class _HomePageState extends State<HomePage> {
                           },
                         ),
                       ),
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false), // Hide Y-axis
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
                       ),
                       topTitles: const AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
@@ -438,13 +988,12 @@ class _HomePageState extends State<HomePage> {
                     borderData: FlBorderData(
                       show: true,
                       border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade400, width: 1),
-                        left: BorderSide(color: Colors.grey.shade400, width: 1),
+                        bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                        left: BorderSide(color: Colors.grey.shade300, width: 1),
                         right: BorderSide.none,
                         top: BorderSide.none,
                       ),
                     ),
-                     // Clip the chart to prevent going outside bounds
                     minX: 1,
                     maxX: currentMonth.toDouble(),
                     minY: 0,
@@ -453,33 +1002,32 @@ class _HomePageState extends State<HomePage> {
                       LineChartBarData(
                         spots: lineSpots,
                         isCurved: true,
-                        curveSmoothness: 0.2, // Reduced smoothness to prevent excessive curves
-                        color: Colors.blue,
+                        curveSmoothness: 0.2,
+                        color: primaryColor,
                         barWidth: 3,
                         isStrokeCapRound: true,
-                        preventCurveOverShooting: true, // Prevent curve from going below minY
+                        preventCurveOverShooting: true,
                         dotData: FlDotData(
                           show: true,
                           getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                             radius: 6,
-                            color: Colors.blue,
+                            color: primaryColor,
                             strokeWidth: 2,
                             strokeColor: Colors.white,
                           ),
                         ),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: Colors.blue.withOpacity(0.1),
-                          applyCutOffY: true, // Apply cutoff to prevent area from going below minY
-                          cutOffY: 0, // Set cutoff at Y = 0
+                          color: primaryColor.withValues(alpha: 0.1),
+                          applyCutOffY: true,
+                          cutOffY: 0,
                         ),
                       ),
                     ],
                     lineTouchData: LineTouchData(
                       enabled: true,
                       touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (touchedSpot) => Colors.blue.shade800,
-
+                        getTooltipColor: (touchedSpot) => primaryColor,
                         tooltipPadding: const EdgeInsets.all(8),
                         getTooltipItems: (List<LineBarSpot> touchedSpots) {
                           return touchedSpots.map((LineBarSpot touchedSpot) {
@@ -508,9 +1056,6 @@ class _HomePageState extends State<HomePage> {
                           }).toList();
                         },
                       ),
-                      touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
-                        // Handle touch events if needed
-                      },
                       handleBuiltInTouches: true,
                     ),
                   ),
@@ -654,18 +1199,17 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
   Widget _buildRemindersSection() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.05),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -673,28 +1217,49 @@ class _HomePageState extends State<HomePage> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
+                bottom: BorderSide(color: Colors.grey.shade100),
               ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Reminders',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.notifications, color: primaryColor, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Reminders',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
-                FloatingActionButton(
-                  mini: true,
-                  onPressed: _showAddReminderDialog,
-                  backgroundColor: const Color(0xFF1993C4),
-                  child: const Icon(Icons.add, color: Colors.white),
+                Container(
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: _showAddReminderDialog,
+                    icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -702,19 +1267,13 @@ class _HomePageState extends State<HomePage> {
 
           // Reminders List using StreamBuilder
           Container(
-            padding: const EdgeInsets.all(16),
+            constraints: const BoxConstraints(minHeight: 100),
+            padding: const EdgeInsets.all(20),
             child: _currentUserId == null
-                ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'Please log in to view reminders',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
+                ? _buildEmptyState(
+              icon: Icons.login,
+              title: 'Please Log In',
+              subtitle: 'Log in to view your reminders',
             )
                 : StreamBuilder<QuerySnapshot>(
               stream: _firestore
@@ -724,40 +1283,22 @@ class _HomePageState extends State<HomePage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  );
+                  return _buildErrorState('Error loading reminders');
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                  return const Center(
+                    child: CircularProgressIndicator(color: primaryColor),
                   );
                 }
 
                 final reminders = snapshot.data!.docs;
 
                 if (reminders.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text(
-                        'No reminders set',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
+                  return _buildEmptyState(
+                    icon: Icons.notifications_none,
+                    title: 'No Reminders',
+                    subtitle: 'Tap + to add your first reminder',
                   );
                 }
 
@@ -776,20 +1317,110 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 30,
+            color: Colors.grey.shade400,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.error_outline,
+            size: 30,
+            color: Colors.red.shade300,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Oops!',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          message,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   Widget _buildReminderItem(ReminderItem reminder) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.calendar_today,
-            color: Colors.grey[600],
-            size: 20,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.calendar_today,
+              color: primaryColor,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -799,284 +1430,63 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   reminder.name,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Colors.black87,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   reminder.date,
                   style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.edit, color: Colors.grey[600], size: 20),
-            onPressed: () => _showEditReminderDialog(reminder),
-          ),
-          IconButton(
-            icon: Icon(Icons.delete, color: Colors.grey[600], size: 20),
-            onPressed: () => _deleteReminder(reminder.id),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Updated _showAddReminderDialog with alert info
-  void _showAddReminderDialog() {
-    final nameController = TextEditingController();
-    final dateController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Reminder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'Enter reminder name',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: dateController,
-              decoration: const InputDecoration(
-                labelText: 'Date',
-                hintText: 'DD-MM-YYYY',
-                suffixIcon: Icon(Icons.notification_add),
-              ),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (date != null) {
-                  dateController.text = '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-                }
-              },
-              readOnly: true,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'An alert will be shown when you open the app on the selected date',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.edit, color: Colors.grey.shade600, size: 16),
+                  onPressed: () => _showEditReminderDialog(reminder),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty && dateController.text.isNotEmpty) {
-                if (_currentUserId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please log in to add reminders')),
-                  );
-                  return;
-                }
-                await _addReminder(nameController.text, dateController.text);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditReminderDialog(ReminderItem reminder) {
-    final nameController = TextEditingController(text: reminder.name);
-    final dateController = TextEditingController(text: reminder.date);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Reminder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: dateController,
-              decoration: const InputDecoration(
-                labelText: 'Date',
-                suffixIcon: Icon(Icons.notification_add),
-              ),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (date != null) {
-                  dateController.text = '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-                }
-              },
-              readOnly: true,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'An alert will be shown when you open the app on the new date',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.delete, color: Colors.grey.shade600, size: 16),
+                  onPressed: () => _showDeleteConfirmation(reminder.id),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty && dateController.text.isNotEmpty) {
-                await _updateReminder(reminder.id, nameController.text, dateController.text, reminder.type);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
+              ),
+            ],
           ),
         ],
       ),
     );
-  }
-
-  // Updated Firebase CRUD operations without notification scheduling
-  Future<void> _addReminder(String name, String date) async {
-    if (_currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to add reminders')),
-      );
-      return;
-    }
-
-    try {
-      // Add reminder to Firestore
-      await _firestore.collection(_remindersCollection).add({
-        'userId': _currentUserId,
-        'name': name,
-        'date': date,
-        'type': 'reminder',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reminder added successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding reminder: $e')),
-      );
-    }
-  }
-
-  Future<void> _updateReminder(String id, String name, String date, String type) async {
-    if (_currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to update reminders')),
-      );
-      return;
-    }
-
-    try {
-      // First check if the reminder belongs to the current user
-      final doc = await _firestore.collection(_remindersCollection).doc(id).get();
-      if (!doc.exists || doc.data()?['userId'] != _currentUserId) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unauthorized: Cannot update this reminder')),
-        );
-        return;
-      }
-
-      // Update reminder in Firestore
-      await _firestore.collection(_remindersCollection).doc(id).update({
-        'name': name,
-        'date': date,
-        'type': type,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reminder updated successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating reminder: $e')),
-      );
-    }
-  }
-
-  Future<void> _deleteReminder(String id) async {
-    if (_currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to delete reminders')),
-      );
-      return;
-    }
-
-    try {
-      // First check if the reminder belongs to the current user
-      final doc = await _firestore.collection(_remindersCollection).doc(id).get();
-      if (!doc.exists || doc.data()?['userId'] != _currentUserId) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unauthorized: Cannot delete this reminder')),
-        );
-        return;
-      }
-
-      // Delete reminder from Firestore
-      await _firestore.collection(_remindersCollection).doc(id).delete();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reminder deleted successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting reminder: $e')),
-      );
-    }
   }
 }
 
-
-
+// ReminderItem class
 class ReminderItem {
   final String id;
   final String name;

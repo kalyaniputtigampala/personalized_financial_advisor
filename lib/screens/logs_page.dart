@@ -24,6 +24,9 @@ class _LogsPageState extends State<LogsPage> {
   // Track which alerts have been shown to avoid repetition
   final Set<String> _shownAlerts = <String>{};
 
+  // Primary design color - consistent with your design system
+  static const Color primaryColor = Color(0xFF1993C4);
+
   // Categories and their colors
   final List<String> _categories = [
     'Bills', 'Dining', 'Education', 'EMI', 'Fuel', 'Gadgets', 'Groceries',
@@ -98,7 +101,7 @@ class _LogsPageState extends State<LogsPage> {
 
       if (targetAmount > 0) {
         final progress = currentAmount / targetAmount;
-        final alertKey = '${target.id}_${DateTime.now().month}_${DateTime.now().year}';
+        final alertKey = '${target.id}${DateTime.now().month}${DateTime.now().year}';
 
         // Check if we should show an alert and haven't shown it yet this month
         if (!_shownAlerts.contains(alertKey)) {
@@ -126,17 +129,27 @@ class _LogsPageState extends State<LogsPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          icon: Icon(
-            Icons.warning_amber_rounded,
-            color: Colors.orange,
-            size: 48,
-          ),
-          title: Text(
-            'Target Alert',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.orange[700],
-            ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Target Alert',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -144,12 +157,12 @@ class _LogsPageState extends State<LogsPage> {
             children: [
               Text(
                 'Target: ${target.name}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'Category: ${target.category}',
                 style: TextStyle(
@@ -157,13 +170,13 @@ class _LogsPageState extends State<LogsPage> {
                   fontSize: 14,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange[200]!),
+                  border: Border.all(color: Colors.orange.shade200),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,48 +185,37 @@ class _LogsPageState extends State<LogsPage> {
                       'You\'ve reached $percentage% of your target!',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Colors.orange[700],
+                        color: Colors.orange.shade700,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Spent: ₹${currentAmount.toStringAsFixed(0)} / ₹${targetAmount.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    Text(
-                      'Remaining: ₹${remaining.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 14),
-                    ),
+                    const SizedBox(height: 8),
+                    Text('Spent: ₹${currentAmount.toStringAsFixed(0)} / ₹${targetAmount.toStringAsFixed(0)}'),
+                    Text('Remaining: ₹${remaining.toStringAsFixed(0)}'),
                   ],
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 'You\'re getting close to your spending limit for ${target.category}. Consider reducing expenses in this category to stay within your budget.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Got it'),
+              child: Text('Got it', style: TextStyle(color: Colors.grey.shade600)),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Scroll to the top to show recent expenses
-                setState(() {
-                  _showAddForm = false;
-                });
+                setState(() => _showAddForm = false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: Text('Review Expenses'),
+              child: const Text('Review Expenses', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -231,17 +233,27 @@ class _LogsPageState extends State<LogsPage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          icon: Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 48,
-          ),
-          title: Text(
-            'Target Exceeded!',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red[700],
-            ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.error_outline, color: Colors.red, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Target Exceeded!',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -249,26 +261,20 @@ class _LogsPageState extends State<LogsPage> {
             children: [
               Text(
                 'Target: ${target.name}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'Category: ${target.category}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red[50],
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[200]!),
+                  border: Border.all(color: Colors.red.shade200),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,56 +283,47 @@ class _LogsPageState extends State<LogsPage> {
                       'You\'ve exceeded your target by ${((progress - 1) * 100).toStringAsFixed(1)}%!',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Colors.red[700],
+                        color: Colors.red.shade700,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Target: ₹${targetAmount.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 14),
-                    ),
+                    const SizedBox(height: 8),
+                    Text('Target: ₹${targetAmount.toStringAsFixed(0)}'),
                     Text(
                       'Spent: ₹${currentAmount.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       'Exceeded by: ₹${exceeded.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.red[700],
+                        color: Colors.red.shade700,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 'You\'re off track with your ${target.category} spending this month. Consider reviewing your recent expenses and adjusting your spending habits to get back on track.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Dismiss'),
+              child: Text('Dismiss', style: TextStyle(color: Colors.grey.shade600)),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Close add form to focus on expenses list
-                setState(() {
-                  _showAddForm = false;
-                });
+                setState(() => _showAddForm = false);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: Text('Review Expenses'),
+              child: const Text('Review Expenses', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -339,11 +336,7 @@ class _LogsPageState extends State<LogsPage> {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-
-    return {
-      'start': startOfMonth,
-      'end': endOfMonth,
-    };
+    return {'start': startOfMonth, 'end': endOfMonth};
   }
 
   // Get month name for display
@@ -360,7 +353,12 @@ class _LogsPageState extends State<LogsPage> {
   Future<void> _addExpense() async {
     if (_amountController.text.isEmpty || _descriptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
+        SnackBar(
+          content: const Text('Please fill all fields'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
       return;
     }
@@ -368,7 +366,12 @@ class _LogsPageState extends State<LogsPage> {
     final user = _auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not authenticated')),
+        SnackBar(
+          content: const Text('User not authenticated'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
       return;
     }
@@ -385,16 +388,24 @@ class _LogsPageState extends State<LogsPage> {
 
       _amountController.clear();
       _descriptionController.clear();
-      setState(() {
-        _showAddForm = false;
-      });
+      setState(() => _showAddForm = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Expense added successfully!')),
+        SnackBar(
+          content: const Text('Expense added successfully!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding expense: $e')),
+        SnackBar(
+          content: Text('Error adding expense: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
     }
   }
@@ -404,11 +415,21 @@ class _LogsPageState extends State<LogsPage> {
     try {
       await _firestore.collection('expenses').doc(docId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Expense deleted successfully!')),
+        SnackBar(
+          content: const Text('Expense deleted successfully!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting expense: $e')),
+        SnackBar(
+          content: Text('Error deleting expense: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
     }
   }
@@ -426,8 +447,8 @@ class _LogsPageState extends State<LogsPage> {
       final expenseDate = (data['date'] as Timestamp).toDate();
 
       // Only include expenses from current month
-      if (expenseDate.isAfter(startOfMonth.subtract(Duration(days: 1))) &&
-          expenseDate.isBefore(endOfMonth.add(Duration(days: 1)))) {
+      if (expenseDate.isAfter(startOfMonth.subtract(const Duration(days: 1))) &&
+          expenseDate.isBefore(endOfMonth.add(const Duration(days: 1)))) {
         final category = data['category'] as String;
         final amount = (data['amount'] as num).toDouble();
         totals[category] = (totals[category] ?? 0) + amount;
@@ -453,23 +474,10 @@ class _LogsPageState extends State<LogsPage> {
     final total = categoryTotals.values.fold(0.0, (sum, amount) => sum + amount);
 
     if (total == 0) {
-      return Center(
-        child: Column(
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No expenses yet',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
-        ),
+      return _buildEmptyState(
+        icon: Icons.show_chart,
+        title: 'No Data Available',
+        subtitle: 'Start adding expenses to see your chart',
       );
     }
 
@@ -490,14 +498,6 @@ class _LogsPageState extends State<LogsPage> {
 
     return Column(
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
         SizedBox(
           height: 200,
           child: PieChart(
@@ -540,7 +540,7 @@ class _LogsPageState extends State<LogsPage> {
               ),
               Text(
                 '₹${entry.value.toStringAsFixed(0)} (${percentage.toStringAsFixed(1)}%)',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -549,16 +549,54 @@ class _LogsPageState extends State<LogsPage> {
     );
   }
 
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 30, color: Colors.grey.shade400),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
 
     if (user == null) {
-      return const Scaffold(
+      return Scaffold(
+        backgroundColor: Colors.white,
         body: Center(
-          child: Text(
-            'Please log in to view your expenses',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+          child: _buildEmptyState(
+            icon: Icons.login,
+            title: 'Please Log In',
+            subtitle: 'Log in to view your expenses',
           ),
         ),
       );
@@ -566,10 +604,12 @@ class _LogsPageState extends State<LogsPage> {
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      //backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
               Row(
@@ -578,209 +618,417 @@ class _LogsPageState extends State<LogsPage> {
                   const Text(
                     'Expenses',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  FloatingActionButton(
-                    mini: true,
-                    onPressed: () => setState(() => _showAddForm = !_showAddForm),
-                    backgroundColor: const Color(0xFF1993C4),
-                    child: Icon(_showAddForm ? Icons.close : Icons.add, color: Colors.white),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      onPressed: () => setState(() => _showAddForm = !_showAddForm),
+                      icon: Icon(_showAddForm ? Icons.close : Icons.add, color: Colors.white, size: 20),
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 30),
 
               // Add Expense Form
               if (_showAddForm) ...[
-                Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Add New Expense',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        spreadRadius: 0,
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
                         ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Amount',
-                            prefixText: '₹',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _descriptionController,
-                          decoration: const InputDecoration(
-                            labelText: 'Description',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _selectedCategory,
-                          decoration: const InputDecoration(
-                            labelText: 'Category',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _categories.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value!;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
+                        child: Row(
                           children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _addExpense,
-                                child: const Text('Save'),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
                               ),
+                              child: Icon(Icons.add, color: primaryColor, size: 20),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => setState(() => _showAddForm = false),
-                                child: const Text('Cancel'),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Add New Expense',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _amountController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Amount',
+                                hintText: 'Enter amount',
+                                prefixText: '₹',
+                                prefixIcon: Icon(Icons.currency_rupee, color: primaryColor),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: primaryColor, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _descriptionController,
+                              decoration: InputDecoration(
+                                labelText: 'Description',
+                                hintText: 'Enter description',
+                                prefixIcon: Icon(Icons.description, color: primaryColor),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: primaryColor, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              value: _selectedCategory,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                prefixIcon: Icon(Icons.category, color: primaryColor),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: primaryColor, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                              items: _categories.map((category) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category),
+                                );
+                              }).toList(),
+                              onChanged: (value) => setState(() => _selectedCategory = value!),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _addExpense,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primaryColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    child: const Text('Save Expense', style: TextStyle(fontWeight: FontWeight.w600)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => setState(() => _showAddForm = false),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: Colors.grey.shade300),
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 30),
               ],
 
               // Main Content
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _firestore
-                      .collection('expenses')
-                      .where('userId', isEqualTo: user.uid)
-                      .orderBy('timestamp', descending: true)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    }
-
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final docs = snapshot.data!.docs;
-                    final currentMonthTotals = _calculateCurrentMonthCategoryTotals(docs);
-                    final allTimeTotals = _calculateAllTimeCategoryTotals(docs);
-                    final currentMonthTotal = currentMonthTotals.values.fold(0.0, (sum, amount) => sum + amount);
-                    final allTimeTotal = allTimeTotals.values.fold(0.0, (sum, amount) => sum + amount);
-
-                    return SingleChildScrollView(
+              StreamBuilder<QuerySnapshot>(
+                stream: _firestore
+                    .collection('expenses')
+                    .where('userId', isEqualTo: user.uid)
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
                       child: Column(
                         children: [
-                          // Latest 5 Expenses
-                          Card(
-                            elevation: 4,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.error_outline, size: 30, color: Colors.red.shade300),
+                          ),
+                          const SizedBox(height: 16),
+                          Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: primaryColor));
+                  }
+
+                  final docs = snapshot.data!.docs;
+                  final currentMonthTotals = _calculateCurrentMonthCategoryTotals(docs);
+                  final allTimeTotals = _calculateAllTimeCategoryTotals(docs);
+                  final currentMonthTotal = currentMonthTotals.values.fold(0.0, (sum, amount) => sum + amount);
+                  final allTimeTotal = allTimeTotals.values.fold(0.0, (sum, amount) => sum + amount);
+
+                  return Column(
+                    children: [
+                      // Latest Expenses Section
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              spreadRadius: 0,
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                              ),
+                              child: Row(
                                 children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: primaryColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.receipt_long, color: primaryColor, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
                                   const Text(
-                                    'Latest 5 Expenses',
+                                    'Recent Expenses',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
-                                  if (docs.isEmpty)
-                                    const Center(
-                                      child: Text(
-                                        'No expenses yet. Add your first expense!',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                    )
-                                  else
-                                    ...docs.take(5).map((doc) {
-                                      final data = doc.data() as Map<String, dynamic>;
-                                      final date = (data['date'] as Timestamp).toDate();
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              child: docs.isEmpty
+                                  ? _buildEmptyState(
+                                icon: Icons.receipt_long,
+                                title: 'No Expenses Yet',
+                                subtitle: 'Add your first expense to get started!',
+                              )
+                                  : Column(
+                                children: docs.take(5).map((doc) {
+                                  final data = doc.data() as Map<String, dynamic>;
+                                  final date = (data['date'] as Timestamp).toDate();
 
-                                      return Card(
-                                        margin: const EdgeInsets.only(bottom: 8),
-                                        child: ListTile(
-                                          leading: CircleAvatar(
-                                            backgroundColor: _categoryColors[data['category']],
-                                            child: Text(
-                                              data['category'][0],
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundColor: _categoryColors[data['category']],
+                                          radius: 20,
+                                          child: Text(
+                                            data['category'][0],
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
                                             ),
                                           ),
-                                          title: Text(
-                                            data['description'],
-                                            style: const TextStyle(fontWeight: FontWeight.w500),
-                                          ),
-                                          subtitle: Text(
-                                            '${data['category']} • ${date.day}/${date.month}/${date.year}',
-                                          ),
-                                          trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                '₹${data['amount'].toStringAsFixed(0)}',
+                                                data['description'],
                                                 style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.black87,
                                                 ),
                                               ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete, color: Colors.red),
-                                                onPressed: () => _deleteExpense(doc.id),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${data['category']} • ${date.day}/${date.month}/${date.year}',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 12,
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      );
-                                    }).toList(),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              '₹${data['amount'].toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            GestureDetector(
+                                              onTap: () => _deleteExpense(doc.id),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade50,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Icon(
+                                                  Icons.delete_outline,
+                                                  color: Colors.red.shade400,
+                                                  size: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Monthly Expenses Chart
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              spreadRadius: 0,
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: primaryColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.pie_chart, color: primaryColor, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Expenses for ${_getCurrentMonthName()}',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Current Month Pie Chart
-                          Card(
-                            elevation: 4,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              child: _buildPieChart(currentMonthTotals, ''),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildPieChart(currentMonthTotals, 'Expenses for ${_getCurrentMonthName()}'),
-                                  const SizedBox(height: 16),
                                   const Divider(),
+                                  const SizedBox(height: 16),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -789,14 +1037,15 @@ class _LogsPageState extends State<LogsPage> {
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
                                         ),
                                       ),
                                       Text(
                                         '₹${currentMonthTotal.toStringAsFixed(0)}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.green,
+                                          color: primaryColor,
                                         ),
                                       ),
                                     ],
@@ -805,18 +1054,18 @@ class _LogsPageState extends State<LogsPage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Total All Time:',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey,
+                                          color: Colors.grey.shade600,
                                         ),
                                       ),
                                       Text(
                                         '₹${allTimeTotal.toStringAsFixed(0)}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey,
+                                          color: Colors.grey.shade600,
                                         ),
                                       ),
                                     ],
@@ -824,12 +1073,12 @@ class _LogsPageState extends State<LogsPage> {
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
